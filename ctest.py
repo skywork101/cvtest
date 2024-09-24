@@ -34,17 +34,48 @@ cv.destroyWindow('Select ROI')
 needle_img = frame[y:y+h, x:x+w].copy()
 
 # Create image pyramid for the needle
-def create_image_pyramid(image, levels=3):
-    return [cv.pyrDown(image) if i > 0 else image for i in range(levels)]
+# def create_image_pyramid(image, levels=3):
+#     return [cv.pyrDown(image) if i > 0 else image for i in range(levels)]
+
+
+def create_image_pyramid(image, levels=4):
+    pyramid = [image]  # Start with the original image
+    for i in range(1, levels):
+        downsampled = cv.pyrDown(pyramid[i - 1])  # Downsample the last image
+        pyramid.append(downsampled)
+
+    # Optionally, create upsampled images from the downsampled images
+    for i in range(levels - 1):
+        upsampled = cv.pyrUp(pyramid[i + 1])  # Upsample the next image
+        pyramid.append(upsampled)
+
+    return pyramid
+
+def visualize_image_pyramid(pyramid):
+    # Create a blank image to stack the pyramid images
+    total_width = max(img.shape[1] for img in pyramid)
+    total_height = sum(img.shape[0] for img in pyramid)
+    stacked_image = np.zeros((total_height, total_width, 3), dtype=np.uint8)
+
+    current_y = 0
+    for img in pyramid:
+        stacked_image[current_y:current_y + img.shape[0], :img.shape[1]] = img
+        current_y += img.shape[0]
+
+    cv.imshow('Image Pyramid', stacked_image)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+
 
 needle_pyramid = create_image_pyramid(needle_img)
+visualize_image_pyramid(needle_pyramid)
 
 # Deque to store templates
 template_deque = deque(maxlen=10)
 template_deque.append(needle_img)
 
 last_top_left = None
-threshold = 0.4
+threshold = 0.8
 
 while True:
     ret, frame = video.read()
