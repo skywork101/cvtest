@@ -9,6 +9,7 @@ tracker_type = tracker_types[6]
 particle_frames_count = 0  # Counter for frames using particle filter
 max_particle_frames = 5     # Number of frames to use particle filter before reinitializing tracker
 
+
 if tracker_type == 'BOOSTING':
     tracker = cv2.legacy.TrackerBoosting_create()
 if tracker_type == 'MIL':
@@ -99,12 +100,6 @@ while True:
             p = compute_norm_hist(frame, particles[:, i])
             weights[i] = compute_weight(p, q)
 
-        # Adjust particle count dynamically
-        num_of_particles = adjust_particle_count(weights, num_of_particles)
-
-        # Resize weights array to match num_of_particles
-        weights = np.ones(num_of_particles)  # Reinitialize weights to match the new number of particles
-
         # Resample particles
         weights /= np.sum(weights)
         indices = np.random.choice(np.arange(num_of_particles), size=num_of_particles, p=weights)
@@ -126,7 +121,7 @@ while True:
         # Reset the particle frame counter since tracking succeeded
         particle_frames_count = 0
 
-    # Check if we need to reinitialize the tracker
+    # Check if we need to reinitialize the MOSSE tracker
     if particle_frames_count >= max_particle_frames:
         # Reinitialize the tracker with the last known position
         bbox = (x_c_mean - half_width, y_c_mean - half_height, half_width * 2, half_height * 2)
